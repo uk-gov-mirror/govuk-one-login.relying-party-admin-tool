@@ -69,14 +69,19 @@ Mappings:
   EnvironmentConfiguration:
     dev:
       serviceDomain: "development.sign-in.service.gov.uk"
+      sessionExpiry: "7200000"
     build:
       serviceDomain: "build.sign-in.service.gov.uk"
+      sessionExpiry: "7200000"
     staging:
       serviceDomain: "staging.sign-in.service.gov.uk"
+      sessionExpiry: "7200000"
     integration:
       serviceDomain: "integration.sign-in.service.gov.uk"
+      sessionExpiry: "7200000"
     production:
       serviceDomain: "sign-in.service.gov.uk"
+      sessionExpiry: "7200000"
 
 Resources:
   #region Fargate Cluster
@@ -211,6 +216,13 @@ Resources:
               Value: "production"
             - Name: "ENVIRONMENT"
               Value: !Sub "${Environment}"
+            - Name: "SESSION_EXPIRY"
+              Value:
+                !FindInMap [
+                  EnvironmentConfiguration,
+                  !Ref Environment,
+                  sessionExpiry,
+                ]
           Secrets:
             - Name: "SESSION_SECRET"
               ValueFrom: !Ref SessionSecret
@@ -310,29 +322,9 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: "SessionTableCRUD"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "dynamodb:DescribeTable"
-                  - "dynamodb:PutItem"
-                  - "dynamodb:DeleteItem"
-                  - "dynamodb:GetItem"
-                  - "dynamodb:Scan"
-                  - "dynamodb:UpdateItem"
-                Resource:
-                  - !GetAtt SessionsTable.Arn
-        - PolicyName: "SessionTableKmsEncryptDecrypt"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - kms:Decrypt
-                  - kms:Encrypt
-                Resource: !GetAtt SessionsTableEncryptionKey.Arn
+        - !Ref SessionsTableReadAndWriteAccessPolicy
+        - !Ref ServicesTableReadAndWriteAccessPolicy
+        - !Ref UserPermissionsTableReadAndWriteAccessPolicy
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -688,6 +680,30 @@ Resources:
             Condition:
               ArnLike:
                 kms:EncryptionContext:aws:dynamodb:table/arn: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*
+
+  ServicesTableReadAndWriteAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowServicesTableReadAndWriteAccess
+            Effect: Allow
+            Action:
+              - "dynamodb:DescribeTable"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+              - "dynamodb:GetItem"
+              - "dynamodb:Scan"
+              - "dynamodb:UpdateItem"
+            Resource:
+              - !GetAtt ServicesTable.Arn
+          - Sid: AllowServicesTableKeyAccess
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+            Resource: !GetAtt ServicesTableEncryptionKey.Arn
   #endregion
 
   #region SessionStorage
@@ -751,6 +767,30 @@ Resources:
               - kms:GenerateDataKey*
               - kms:Describe*
             Resource: !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-frontend-sessions"
+
+  SessionsTableReadAndWriteAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowSessionsTableReadAndWriteAccess
+            Effect: Allow
+            Action:
+              - "dynamodb:DescribeTable"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+              - "dynamodb:GetItem"
+              - "dynamodb:Scan"
+              - "dynamodb:UpdateItem"
+            Resource:
+              - !GetAtt SessionsTable.Arn
+          - Sid: AllowSessionsTableKeyAccess
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+            Resource: !GetAtt SessionsTableEncryptionKey.Arn
 
   SessionSecret:
     Type: AWS::SecretsManager::Secret
@@ -867,4 +907,28 @@ Resources:
       Tags:
         - Key: Name
           Value: UserPermissionsTable
+
+  UserPermissionsTableReadAndWriteAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowUserPermissionsTableReadAndWriteAccess
+            Effect: Allow
+            Action:
+              - "dynamodb:DescribeTable"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+              - "dynamodb:GetItem"
+              - "dynamodb:Scan"
+              - "dynamodb:UpdateItem"
+            Resource:
+              - !GetAtt UserPermissionsTable.Arn
+          - Sid: AllowUserPermissionsTableKeyAccess
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+            Resource: !GetAtt UserPermissionsTableEncryptionKey.Arn
   #endregion
