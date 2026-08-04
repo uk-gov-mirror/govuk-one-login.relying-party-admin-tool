@@ -9,8 +9,6 @@ COPY ui-tests/package-lock.json /tests/ui-tests/package-lock.json
 COPY ui-tests/.npmrc /tests/ui-tests/.npmrc
 COPY ui-tests/.nvmrc /tests/ui-tests/.nvmrc
 
-RUN cd /tests/ui-tests && npm ci && npm run install-browsers && cd /
-
 COPY . .
 
 ENTRYPOINT [ "./run-tests.sh" ]
