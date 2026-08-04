@@ -37,7 +37,7 @@ Parameters:
     Type: Number
     Default: 6001
 
-  # region Tag Parameters
+# region Tag Parameters
   ProductTagValue:
     Description: Value for the Product Tag
     Type: String
@@ -54,16 +54,14 @@ Parameters:
     Description: Value for the System Tag
     Type: String
     Default: RP Service Management
-  # endregion
+ # endregion
 
 Conditions:
   UseCodeSigning: !Not [!Equals [!Ref CodeSigningConfigArn, "none"]]
   UsePermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, "none"]]
   IsDev: !Equals [!Ref Environment, "dev"]
-  DeployVpcOriginLoadBalancerRules:
-    !Or [!Equals [!Ref Environment, "dev"], !Equals [!Ref Environment, "build"]]
-  DeployCloudfrontDnsRecord:
-    !Or [!Equals [!Ref Environment, "dev"], !Equals [!Ref Environment, "build"]]
+  DeployVpcOriginLoadBalancerRules: !Or [!Equals [!Ref Environment, "dev"], !Equals [!Ref Environment, "build"]]
+  DeployCloudfrontDnsRecord: !Or [!Equals [!Ref Environment, "dev"], !Equals [!Ref Environment, "build"]]
 
 Mappings:
   EnvironmentConfiguration:
@@ -108,6 +106,7 @@ Resources:
         - Key: Owner
           Value: !Ref OwnerTagValue
 
+
   ContainerService:
     Type: AWS::ECS::Service
     DependsOn: ApplicationLoadBalancerListenerHTTPS
@@ -143,6 +142,7 @@ Resources:
           Value: !Ref OwnerTagValue
         - Key: Source
           Value: !Ref SourceTagValue
+
 
   ContainerServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -185,6 +185,7 @@ Resources:
         - Key: Owner
           Value: !Ref OwnerTagValue
   # endregion
+
 
   # region Task Definition
 
@@ -322,9 +323,75 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - !Ref SessionsTableReadAndWriteAccessPolicy
-        - !Ref ServicesTableReadAndWriteAccessPolicy
-        - !Ref UserPermissionsTableReadAndWriteAccessPolicy
+        - PolicyName: "SessionTableCRUD"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource:
+                  - !GetAtt SessionsTable.Arn
+        - PolicyName: "SessionTableKmsEncryptDecrypt"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                Resource: !GetAtt SessionsTableEncryptionKey.Arn
+        - PolicyName: "ServicesTableCRUD"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource:
+                  - !GetAtt ServicesTable.Arn
+        - PolicyName: "ServicesTableKmsEncryptDecrypt"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                Resource: !GetAtt ServicesTableEncryptionKey.Arn
+        - PolicyName: "UserPermissionsTableCRUD"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource:
+                  - !GetAtt UserPermissionsTable.Arn
+        - PolicyName: "UserPermissionsTableKmsEncryptDecrypt"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                Resource: !GetAtt UserPermissionsTableEncryptionKey.Arn
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -344,6 +411,7 @@ Resources:
           Value: !Ref SourceTagValue
 
   #endregion
+
 
   #region Load Balancing
 
@@ -450,6 +518,7 @@ Resources:
         - CertificateArn: !ImportValue certificate-CertificateARN
       SslPolicy: "ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09"
 
+
   ApplicationLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -509,6 +578,7 @@ Resources:
       FromPort: 443
       ToPort: 443
 
+
   ApplicationLoadBalancerSecurityGroupEgress:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
@@ -527,8 +597,8 @@ Resources:
           FixedResponseConfig:
             ContentType: text/plain
             MessageBody: |
-              User-agent: *
-              Disallow:
+                User-agent: *
+                Disallow:
             StatusCode: 200
       Conditions:
         - Field: path-pattern
@@ -540,6 +610,7 @@ Resources:
 
   #endregion
 
+
   # region DNS
   ManageServiceSignInRootAliasRecord:
     Type: AWS::Route53::RecordSet
@@ -547,12 +618,7 @@ Resources:
     Properties:
       Name: !Sub
         - "manage.${ServiceDomain}"
-        - ServiceDomain:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              serviceDomain,
-            ]
+        - ServiceDomain: !FindInMap [EnvironmentConfiguration, !Ref Environment, serviceDomain]
       Type: A
       HostedZoneId:
         Fn::ImportValue: hosted-zone-HostedZoneID
@@ -680,30 +746,6 @@ Resources:
             Condition:
               ArnLike:
                 kms:EncryptionContext:aws:dynamodb:table/arn: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*
-
-  ServicesTableReadAndWriteAccessPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowServicesTableReadAndWriteAccess
-            Effect: Allow
-            Action:
-              - "dynamodb:DescribeTable"
-              - "dynamodb:PutItem"
-              - "dynamodb:DeleteItem"
-              - "dynamodb:GetItem"
-              - "dynamodb:Scan"
-              - "dynamodb:UpdateItem"
-            Resource:
-              - !GetAtt ServicesTable.Arn
-          - Sid: AllowServicesTableKeyAccess
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-              - kms:Encrypt
-            Resource: !GetAtt ServicesTableEncryptionKey.Arn
   #endregion
 
   #region SessionStorage
@@ -767,30 +809,6 @@ Resources:
               - kms:GenerateDataKey*
               - kms:Describe*
             Resource: !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-frontend-sessions"
-
-  SessionsTableReadAndWriteAccessPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowSessionsTableReadAndWriteAccess
-            Effect: Allow
-            Action:
-              - "dynamodb:DescribeTable"
-              - "dynamodb:PutItem"
-              - "dynamodb:DeleteItem"
-              - "dynamodb:GetItem"
-              - "dynamodb:Scan"
-              - "dynamodb:UpdateItem"
-            Resource:
-              - !GetAtt SessionsTable.Arn
-          - Sid: AllowSessionsTableKeyAccess
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-              - kms:Encrypt
-            Resource: !GetAtt SessionsTableEncryptionKey.Arn
 
   SessionSecret:
     Type: AWS::SecretsManager::Secret
@@ -907,28 +925,4 @@ Resources:
       Tags:
         - Key: Name
           Value: UserPermissionsTable
-
-  UserPermissionsTableReadAndWriteAccessPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowUserPermissionsTableReadAndWriteAccess
-            Effect: Allow
-            Action:
-              - "dynamodb:DescribeTable"
-              - "dynamodb:PutItem"
-              - "dynamodb:DeleteItem"
-              - "dynamodb:GetItem"
-              - "dynamodb:Scan"
-              - "dynamodb:UpdateItem"
-            Resource:
-              - !GetAtt UserPermissionsTable.Arn
-          - Sid: AllowUserPermissionsTableKeyAccess
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-              - kms:Encrypt
-            Resource: !GetAtt UserPermissionsTableEncryptionKey.Arn
   #endregion
