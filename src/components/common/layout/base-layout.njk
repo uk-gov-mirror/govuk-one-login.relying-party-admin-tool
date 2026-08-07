@@ -3,6 +3,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+      {% include "common/errors/error-summary.njk" %}
       {% block pageContent %}
       {% endblock %}
     </div>
