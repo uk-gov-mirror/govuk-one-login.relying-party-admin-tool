@@ -10,6 +10,7 @@ Feature: Create a new client - summary page
     And the footer shows
     And the page contains the breadcrumbs: "Your services, Service Name, Create a client"
     Then the page has the heading: "Check these details before creating your client"
+    And the table contains the row: "Client Name Not set"
 
   Scenario: Create a new client - summary page validates empty client config
     Given I go to the "create client - summary" page

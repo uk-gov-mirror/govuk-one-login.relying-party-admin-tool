@@ -175,6 +175,10 @@ Then(
   }
 );
 
+Then("the table contains the row: {string}", async ({ page }, text: string) => {
+  await expect(page.getByRole("row", { name: text })).toBeVisible();
+});
+
 Then(
   "I check the radio button: {string}",
   async ({ page }, radioButtonLabel: string) => {
