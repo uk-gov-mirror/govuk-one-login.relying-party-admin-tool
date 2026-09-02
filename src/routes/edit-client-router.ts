@@ -5,6 +5,11 @@ import {
   editIdTokenSigningAlgorithmPost,
 } from "../components/clients/edit-id-token-signing-algorithm/edit-id-token-signing-algorithm-controller.js";
 import { validateEditIdTokenSigningAlgorithmRequest } from "../components/clients/edit-id-token-signing-algorithm/edit-id-token-signing-algorithm-validation.js";
+import {
+  editBackchannelLogoutUrlGet,
+  editBackchannelLogoutUrlPost,
+} from "../components/clients/edit-backchannel-logout-url/edit-backchannel-logout-url-controller.js";
+import { validateEditBackchannelLogoutUrlRequest } from "../components/clients/edit-backchannel-logout-url/edit-backchannel-logout-url-validation.js";
 
 const router = express.Router();
 
@@ -17,6 +22,17 @@ router.post(
   PATH_NAMES.CLIENT_EDIT_ID_TOKEN_SIGNING_ALGORITHM,
   validateEditIdTokenSigningAlgorithmRequest(),
   editIdTokenSigningAlgorithmPost()
+);
+
+router.get(
+  PATH_NAMES.CLIENT_EDIT_BACKCHANNEL_LOGOUT_URL,
+  editBackchannelLogoutUrlGet()
+);
+
+router.post(
+  PATH_NAMES.CLIENT_EDIT_BACKCHANNEL_LOGOUT_URL,
+  validateEditBackchannelLogoutUrlRequest(),
+  editBackchannelLogoutUrlPost()
 );
 
 export { router as editClientRouter };

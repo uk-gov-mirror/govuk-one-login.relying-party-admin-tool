@@ -33,5 +33,6 @@ type CoreClientConfig = {
 };
 
 type AdditionalClientConfig = {
-  idTokenSigningAlgorithm?: "es256" | "rs256";
+  idTokenSigningAlgorithm?: "ES256" | "RS256";
+  backchannelLogoutUrl?: string;
 };
