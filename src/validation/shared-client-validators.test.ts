@@ -6,6 +6,7 @@ import {
   productionUrlValidator,
   redirectUrlValidator,
   idTokenSigningAlgorithmValidator,
+  validScopesValidator,
 } from "./shared-client-validators.js";
 
 describe("shared client validator tests", () => {
@@ -274,6 +275,35 @@ describe("shared client validator tests", () => {
       expect(result).toBeInvalid();
       expect(result).toHaveInvalidErrors([
         'Invalid ID token signing algorithm provided: "invalid-algorithm"',
+      ]);
+    });
+  });
+
+  describe("scope validator", () => {
+    it("should pass validation with valid scopes", async () => {
+      const scopes = ["wallet-subject-id"];
+
+      const result = await validScopesValidator.validate(scopes);
+
+      expect(result).toBeValid();
+    });
+
+    it("should pass validation when scopes are empty", async () => {
+      const scopes: string[] = [];
+
+      const result = await validScopesValidator.validate(scopes);
+
+      expect(result).toBeValid();
+    });
+
+    it("should fail validation when invalid scopes added", async () => {
+      const scopes = ["not-a-scope"];
+
+      const result = await validScopesValidator.validate(scopes);
+
+      expect(result).toBeInvalid();
+      expect(result).toHaveInvalidErrors([
+        'Invalid scope provided: "not-a-scope"',
       ]);
     });
   });
