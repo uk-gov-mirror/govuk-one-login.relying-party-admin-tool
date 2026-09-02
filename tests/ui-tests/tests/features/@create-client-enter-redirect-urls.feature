@@ -26,7 +26,7 @@ Feature: Create a new client - enter redirect urls page
     And I click the "Add" button
     And the page has finished loading
     Then the table contains the text: "http://url2.com"
-    And I click on the remove button for: "http://url.com"
+    And I click on the url table remove button for: "http://url.com"
     Then the table does not contains the text: "http://url.com"
     And I click the "Continue" button
     Then I am taken to the "create client - select scopes" page
@@ -42,7 +42,7 @@ Feature: Create a new client - enter redirect urls page
     And I enter "http://url2.com" into the field "Add a redirect URL"
     And I click the "Add" button
     And the page has finished loading
-    And I click on the remove button for: "http://url.com"
-    And I click on the remove button for: "http://url2.com"
+    And I click on the url table remove button for: "http://url.com"
+    And I click on the url table remove button for: "http://url2.com"
     And I click the "Continue" button
     Then the error message: "You must have at least one redirect URL" shows

@@ -15,6 +15,8 @@ const pageNameToPath: Record<string, string> = {
   client: "/services/serviceId/clients/clientId",
   "client - edit id token signing algorithm":
     "/services/serviceId/clients/clientId/edit-id-token-signing-algorithm",
+  "client - edit post logout redirect urls":
+    "/services/serviceId/clients/clientId/edit-post-logout-redirect-urls",
   "create client": "/services/serviceId/clients/create",
   "create client - enter client name":
     "/services/serviceId/clients/create/enter-client-name",
@@ -232,5 +234,35 @@ Then(
   async ({ page }, fieldName: string, value: string) => {
     await expect(page.locator(`input#${fieldName}`)).toBeVisible();
     await expect(page.locator(`input#${fieldName}`)).toHaveValue(value);
+  }
+);
+
+Then(
+  "I click on the url table remove button for: {string}",
+  async ({ page }, text: string) => {
+    await expect(
+      page.getByRole("row").filter({
+        has: page.getByRole("cell", {
+          name: text,
+          exact: true,
+        }),
+      })
+    ).toBeVisible();
+    const row = page.getByRole("row").filter({
+      has: page.getByRole("cell", { name: text, exact: true }),
+    });
+    await expect(
+      row.getByRole("button", { name: `Remove Remove ${text}`, exact: true })
+    ).toBeVisible();
+    await row
+      .getByRole("button", { name: `Remove Remove ${text}`, exact: true })
+      .click();
+  }
+);
+
+Then(
+  "the table does not contains the text: {string}",
+  async ({ page }, text: string) => {
+    await expect(page.getByRole("cell", { name: text })).toBeHidden();
   }
 );

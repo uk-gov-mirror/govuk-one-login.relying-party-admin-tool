@@ -8,6 +8,7 @@ import {
   productionUrlValidator,
   redirectUrlValidator,
   idTokenSigningAlgorithmValidator,
+  postLogoutRedirectUrlValidator,
 } from "./shared-client-validators.js";
 import { FieldValidator, optional, rule, when } from "./validator.js";
 import {
@@ -119,6 +120,37 @@ export const enterLandingPageUrlFieldValidator = new FieldValidator(
     )
   ).adaptedFrom((req: Request) => req.body["landing-page-url"] as string),
   "landing-page-url"
+);
+
+const postLogoutRedirectUrlInputValidator = when(
+  (req: Request) => req.body.action === "add",
+  postLogoutRedirectUrlValidator
+    .adaptedFrom((req: Request) => req.body["post-logout-redirect-url-input"])
+    .and(
+      rule((req: Request) => {
+        if (
+          req.body["post-logout-redirect-urls"] !== undefined &&
+          req.body["post-logout-redirect-urls"].includes(
+            req.body["post-logout-redirect-url-input"]
+          )
+        ) {
+          return false;
+        }
+        return true;
+      }, "You have already added this redirect URL")
+    )
+);
+
+const postLogoutRedirectUrlTableValidator = when(
+  (req: Request) => req.body.action === "continue",
+  requiredValidator(
+    "You must have at least one post logout redirect URL"
+  ).adaptedFrom((req: Request) => req.body["post-logout-redirect-urls"])
+);
+
+export const postLogoutRedirectUrlsFieldValidator = new FieldValidator(
+  postLogoutRedirectUrlInputValidator.and(postLogoutRedirectUrlTableValidator),
+  "post-logout-redirect-url-input"
 );
 
 const enterRedirectUrlInputValidator = when(
