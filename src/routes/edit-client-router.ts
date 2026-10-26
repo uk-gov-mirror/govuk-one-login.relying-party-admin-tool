@@ -64,6 +64,11 @@ import {
 import { validateEditRateLimitRequest } from "../components/clients/edit-rate-limit/edit-rate-limit-validation.js";
 import { checkClientExistsForEnvMiddleware } from "../middleware/check-client-exists-middleware.js";
 import { ClientEnvironment } from "../models/client-environment.js";
+import {
+  editScopesGet,
+  editScopesPost,
+} from "../components/clients/edit-scopes/edit-scopes-controller.js";
+import { validateEditScopesRequest } from "../components/clients/edit-scopes/validation.js";
 
 const router = express.Router();
 
@@ -167,6 +172,14 @@ router.post(
   PATH_NAMES.CLIENT_EDIT_RATE_LIMIT,
   validateEditRateLimitRequest(),
   editRateLimitPost()
+);
+
+router.get(PATH_NAMES.CLIENT_EDIT_SCOPES, editScopesGet());
+
+router.post(
+  PATH_NAMES.CLIENT_EDIT_SCOPES,
+  validateEditScopesRequest(),
+  editScopesPost()
 );
 
 router.get(
